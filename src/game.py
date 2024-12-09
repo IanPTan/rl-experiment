@@ -43,24 +43,27 @@ def show(grid):
     return "\n─┼─┼─\n".join(["│".join(row) for row in string])
 
 
-def self_play(game, model, show=False):
+def self_play(game, model, noise=0, show=False):
     inputs = pt.zeros(0, 18)
     outputs = pt.zeros(0, 9)
+    moves = pt.zeros(0, 9)
 
     done = False
     while not done:
         state = game.get_state()
-        move = model(state)
+        output = model(state)
+        move = output + pt.rand(9) * noise
         done = game.move(move) 
 
         inputs = pt.cat((inputs, state.view(1, 18)))
-        outputs = pt.cat((outputs, move.view(1, 9)))
+        outputs = pt.cat((outputs, output.view(1, 9)))
+        moves = pt.cat((moves, move.view(1, 9)))
 
         if show:
             game.print()
             print()
 
-    return inputs, outputs, game.winner
+    return inputs, outputs, moves, game.winner
 
 
 class Game:
