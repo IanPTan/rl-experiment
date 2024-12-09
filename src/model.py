@@ -6,7 +6,7 @@ class Actor(pt.nn.Module):
         super().__init__()
         self.model = pt.nn.Sequential(
                 pt.nn.Linear(18, 9),
-                pt.nn.Softmax()
+                pt.nn.Softmax(dim=-1)
                 )
 
     def forward(self, x):
