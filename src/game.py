@@ -66,6 +66,30 @@ def self_play(game, model, noise=0, show=False):
     return inputs, outputs, moves, game.winner
 
 
+def bot_play(game, bot, model, turn=1, show=False):
+    inputs = pt.zeros(0, 18)
+    moves = pt.zeros(0, 9)
+
+    done = False
+    while not done:
+        state = game.get_state()
+        if turn:
+            move = bot(state)
+        else:
+            move = model(state)
+        done = game.move(move) 
+
+        inputs = pt.cat((inputs, state.view(1, 18)))
+        moves = pt.cat((moves, move.view(1, 9)))
+        turn = 1 - turn
+
+        if show:
+            game.print()
+            print()
+
+    return inputs, moves, game.winner
+
+
 class Game:
     def __init__(self):
         self.grid = pt.zeros((2, 3, 3), dtype=bool)
