@@ -15,6 +15,8 @@ def self_train(actor, critic, actor_optimizer, critic_optimizer, max_games=100, 
 
 
     for i in tqdm(range(max_games), desc="Playing...", unit="games"):
+        actor_optimizer.zero_grad()
+        critic_optimizer.zero_grad()
         inputs, outputs, moves, winner = self_play(game, actor, noise)
         game.reset()
 
@@ -24,15 +26,13 @@ def self_train(actor, critic, actor_optimizer, critic_optimizer, max_games=100, 
         else:
             results[winner::2] = 1
         
-        critic_optimizer.zero_grad()
         move_states = pt.cat((inputs, moves), dim=1)
         _, result_predictions = critic(move_states)
         critic_loss = mse(result_predictions, results)
         critic_loss.mean().backward()
         critic_optimizer.step()
 
-        actor_optimizer.zero_grad()
-        output_states = pt.cat((inputs, outputs), dim=1)
+        output_states = pt.cat((inputs.detach(), outputs.detach()), dim=1)
         actor_loss, _ = critic(output_states)
         actor_loss.mean().backward()
         actor_optimizer.step()
