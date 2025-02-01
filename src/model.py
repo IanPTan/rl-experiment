@@ -1,30 +1,22 @@
 import torch as pt
+import torch.nn as nn
 
+import torch as pt
+import torch.nn as nn
 
-class Actor(pt.nn.Module):
+class Actor(nn.Module):
     def __init__(self):
-        super().__init__()
-        self.model = pt.nn.Sequential(
-                pt.nn.Linear(18, 9),
-                pt.nn.Softmax(dim=-1)
-                )
+        super(Actor, self).__init__()
+        self.fc = nn.Linear(18, 9)  # 18 inputs (game state), 9 outputs (one for each cell on tictactoe grid)
+        self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, x):
-        return self.model(x)
+        return self.softmax(self.fc(x))  # output probabilities for each move
 
-
-class Critic(pt.nn.Module):
+class Critic(nn.Module):
     def __init__(self):
-        super().__init__()
-        self.linear = pt.nn.Linear(27, 1)
-        self.sigmoid = pt.nn.Sigmoid()
-                
+        super(Critic, self).__init__()
+        self.fc = nn.Linear(18, 1)  # 18 inputs and 1 output (value of the state)
 
     def forward(self, x):
-        y = self.linear(x)
-        return y, self.sigmoid(y)
-
-
-if __name__ == "__main__":
-    actor = Actor()
-    critic = Critic()
+        return self.fc(x)  # output the value of the state
