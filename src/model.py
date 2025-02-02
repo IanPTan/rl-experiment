@@ -1,6 +1,7 @@
 import torch as pt
 import torch.nn as nn
 
+<<<<<<< HEAD
 class Actor(nn.Module):
     def __init__(self):
         super(Actor, self).__init__()
@@ -17,3 +18,8 @@ class Critic(nn.Module):
 
     def forward(self, x):
         return self.fc(x)  # output the value of the state
+=======
+Actor = lambda: nn.Sequential(nn.Linear(18, 9), nn.Softmax(dim=-1))
+Critic = lambda: nn.Linear(18, 1)
+rbot = lambda x: pt.randn(9)
+>>>>>>> a9ba175fec65309f5817df8a1faff0027a843986

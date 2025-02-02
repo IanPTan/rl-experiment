@@ -73,5 +73,13 @@ def train(epochs=1000):
         if epoch % 100 == 0:
             print(f"Epoch {epoch}, Reward: {sum(rewards)}")
 
+def train():
+    pass
+
+
 if __name__ == "__main__":
+<<<<<<< HEAD
     train() 
+=======
+    train()
+>>>>>>> a9ba175fec65309f5817df8a1faff0027a843986
