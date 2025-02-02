@@ -1,148 +1,53 @@
 import torch as pt
 
-
-def get_state(grid, turn):
-    if turn:
-        grid = grid.flip((0,))
-
-    state = grid.view(-1).to(pt.float)
-
-    return state
-
-
-def get_open(grid):
-    open = 1 - grid.sum(dim=0).view(-1).to(pt.float)
-
-    return open
-
-
-def check_win(grid):
-    vertical_scores = grid.sum(dim=-2)
-    vertical_win = (vertical_scores == 3).sum(dim=1)
-    horizontal_scores = grid.sum(dim=-1)
-    horizontal_win = (horizontal_scores == 3).sum(dim=1)
-
-    diagonal1_scores = (grid * pt.eye(3)).sum(dim=(1, 2))
-    diagonal1_win = diagonal1_scores == 3
-    diagonal2_scores = (grid * pt.eye(3).flip((0,))).sum(dim=(1, 2))
-    diagonal2_win = diagonal2_scores == 3
-
-    won = (vertical_win + horizontal_win + diagonal1_win + diagonal2_win).to(bool)
-
-    return won
-
-
-def show(grid):
-    string = [""] * 3
-
-    for i in range(3):
-        for j in range(3):
-            x, o = grid[:, i, j].tolist()
-            string[i] += {(0, 0): " ", (1, 0): "X", (0, 1): "O"}[(x, o)]
-
-    return "\n─┼─┼─\n".join(["│".join(row) for row in string])
-
-
-def self_play(game, model, noise=0, show=False):
-    inputs = pt.zeros(0, 18)
-    outputs = pt.zeros(0, 9)
-    moves = pt.zeros(0, 9)
-
-    done = False
-    while not done:
-        state = game.get_state()
-        output = model(state)
-        move = output + pt.rand(9) * noise
-        done = game.move(move) 
-
-        inputs = pt.cat((inputs, state.view(1, 18)))
-        outputs = pt.cat((outputs, output.view(1, 9)))
-        moves = pt.cat((moves, move.view(1, 9)))
-
-        if show:
-            game.print()
-            print()
-
-    return inputs, outputs, moves, game.winner
-
-
-def bot_play(game, bot, model, turn=1, show=False):
-    inputs = pt.zeros(0, 18)
-    moves = pt.zeros(0, 9)
-
-    done = False
-    while not done:
-        state = game.get_state()
-        if turn:
-            move = bot(state)
-        else:
-            move = model(state)
-        done = game.move(move) 
-
-        inputs = pt.cat((inputs, state.view(1, 18)))
-        moves = pt.cat((moves, move.view(1, 9)))
-        turn = 1 - turn
-
-        if show:
-            game.print()
-            print()
-
-    return inputs, moves, game.winner
-
-
 class Game:
     def __init__(self):
-        self.grid = pt.zeros((2, 3, 3), dtype=bool)
-        self.turn = 0
+        self.grid = pt.zeros((2, 3, 3), dtype=bool)  # i'm keeping what you had for the constructor
+        self.turn = 0  
         self.done = False
-        self.winner = -1
+        self.winner = -1  
 
-    def set(self, x):
-        self.grid[self.turn].view(-1)[x] = 1
+    def get_state(self):
+        return self.grid.view(-1).float()  # flatten grid into a 1D tensor
+
+    def get_open(self):
+        return 1 - self.grid.sum(dim=0).view(-1).float()  # 1 for open, 0 for taken to see which cells are open
+
+    def move(self, action_probs):
+        if self.done:
+            return self.done
+
+        # hide already taken cells
+        open_spaces = self.get_open()
+        valid_action_probs = action_probs * open_spaces
+
+        # choose action with the highest probability among valid moves
+        action = pt.argmax(valid_action_probs).item()
+
+        # and then mark the move on the grid and switch turns
+        self.grid[self.turn].view(-1)[action] = 1
         self.turn = 1 - self.turn
 
-        win = check_win(self.grid)
+        # check for a winner
+        win = self.check_win()
         if win.any():
             self.done = True
             self.winner = pt.where(win)[0].item()
         else:
-            self.done = not self.get_open().any()
-
-    def move(self, y, x=None):
-        if self.done:
-            return self.done
-
-        if x != None:
-            y = y * 3 + x
-        if type(y) == pt.Tensor and len(y.flatten()) == 1:
-            y = y.item()
-        if type(y) == pt.Tensor:
-            y = pt.argmax(y * self.get_open()).item()
-        self.set(y)
+            self.done = not self.get_open().any()  # check for a draw
 
         return self.done
-    
-    def get_state(self):
-        return get_state(self.grid, self.turn)
 
-    def get_open(self):
-        return get_open(self.grid)
-
-    def print(self):
-        print(show(self.grid))
+    def check_win(self):
+        # check rows, columns, and diagonals for a win
+        vertical = self.grid.sum(dim=-2) == 3
+        horizontal = self.grid.sum(dim=-1) == 3
+        diagonal1 = (self.grid * pt.eye(3)).sum(dim=(1, 2)) == 3
+        diagonal2 = (self.grid * pt.eye(3).flip((0,))).sum(dim=(1, 2)) == 3
+        return vertical.any(dim=1) | horizontal.any(dim=1) | diagonal1 | diagonal2
 
     def reset(self):
         self.grid = pt.zeros((2, 3, 3), dtype=bool)
         self.turn = 0
         self.done = False
         self.winner = -1
-
-
-if __name__ == "__main__":
-    game = Game()
-    won = False
-    while not won:
-        y, x = input("Move: ").split(" ")
-        won = game.move(int(y), int(x))
-        game.print()
-
