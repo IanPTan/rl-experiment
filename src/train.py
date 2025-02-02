@@ -31,4 +31,4 @@ def ppoUpdate(actor, critic, actorOptimizer, criticOptimizer, states, actions, r
     
 
 if __name__ == "__main__":
-    train()
+    #train()
