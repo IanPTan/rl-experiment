@@ -78,8 +78,4 @@ def train():
 
 
 if __name__ == "__main__":
-<<<<<<< HEAD
-    train() 
-=======
     train()
->>>>>>> a9ba175fec65309f5817df8a1faff0027a843986
