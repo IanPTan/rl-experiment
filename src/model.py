@@ -17,3 +17,6 @@ class Critic(nn.Module):
 
     def forward(self, x):
         return self.fc(x)  # output the value of the state
+
+def rbot(x):
+    return pt.randn(9)
